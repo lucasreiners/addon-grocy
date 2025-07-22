@@ -1,0 +1,6 @@
+{
+  "name": "Fork of Grocy Addon",
+  "udev": true,
+  "url": "https://github.com/lucasreiners/addon-grocy",
+  "maintainer": "lucasreiners"
+}
