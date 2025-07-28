@@ -78,11 +78,7 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 				'qu_id_stock' => $quId,
 				'__qu_factor_purchase_to_stock' => 1,
 				'__barcode' => $barcode,
-				'__image_url' => $imageUrl,
-				'userfields' => [
-					'brand' => $brand,
-					'is_autoimported' => 'true'
-				]
+				'__image_url' => $imageUrl
 			];
 		}
 	}
