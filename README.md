@@ -1,4 +1,4 @@
-# Home Assistant Community Add-on: Grocy
+# Customized HomeAssistant Add-on: Grocy
 
 [![GitHub Release][releases-shield]][releases]
 ![Project Stage][project-stage-shield]
