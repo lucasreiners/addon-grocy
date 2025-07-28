@@ -25,8 +25,15 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 		$data = json_decode($response->getBody());
 		if ($statusCode == 404 || $data->status != 1)
 		{
-			// Nothing found for the given barcode
-			return null;
+			return [
+				'name' => 'LookedUpProduct_' . RandomString(10),
+				'location_id' => $locationId,
+				'qu_id_purchase' => $quId,
+				'qu_id_stock' => $quId,
+				'__qu_factor_purchase_to_stock' => 1,
+				'__barcode' => $barcode,
+				'__image_url' => $imageUrl
+			];
 		}
 		else
 		{
@@ -57,20 +64,25 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 				$name = $data->product->$productNameFieldLocalized;
 			}
 
-			$brands = $data->product->brands;
+			$brands = explode(', ', $data->product->brands);
+			$brand = $brands[0] ?? '';
 
 			// Remove non-ASCII characters in product name (whyever a product name should have them at all)
 			$name = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $name);
-			$brands = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $brands);
+			$brand = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $brand);
 
 			return [
-				'name' => $brands . ' - ' . $name,
+				'name' => $brand . ' - ' . $name,
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId,
 				'__qu_factor_purchase_to_stock' => 1,
 				'__barcode' => $barcode,
-				'__image_url' => $imageUrl
+				'__image_url' => $imageUrl,
+				'userfields' => [
+					'brand' => $brand,
+					'is_autoimported' => 'true'
+				]
 			];
 		}
 	}
