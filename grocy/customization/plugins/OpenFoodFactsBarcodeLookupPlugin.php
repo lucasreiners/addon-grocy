@@ -23,10 +23,9 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 		// Guzzle throws exceptions for connection errors, so nothing to do on that here
 
 		$data = json_decode($response->getBody());
-		if ($statusCode == 404 || $data->status != 1)
-		{
+		if ($statusCode == 404 || $data->status != 1) {
 			return [
-				'name' => 'LookedUpProduct_' . RandomString(10),
+				'name' => 'LookupFailed_' . $barcode . '_' . RandomString(10),
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId,
@@ -34,33 +33,27 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 				'__barcode' => $barcode,
 				'__image_url' => $imageUrl
 			];
-		}
-		else
-		{
+		} else {
 			$imageUrl = '';
-			if (isset($data->product->image_url) && !empty($data->product->image_url))
-			{
+			if (isset($data->product->image_url) && !empty($data->product->image_url)) {
 				$imageUrl = $data->product->image_url;
 			}
 
 			// Take the preset user setting or otherwise simply the first existing location
 			$locationId = $this->Locations[0]->id;
-			if ($this->UserSettings['product_presets_location_id'] != -1)
-			{
+			if ($this->UserSettings['product_presets_location_id'] != -1) {
 				$locationId = $this->UserSettings['product_presets_location_id'];
 			}
 
 			// Take the preset user setting or otherwise simply the first existing quantity unit
 			$quId = $this->QuantityUnits[0]->id;
-			if ($this->UserSettings['product_presets_qu_id'] != -1)
-			{
+			if ($this->UserSettings['product_presets_qu_id'] != -1) {
 				$quId = $this->UserSettings['product_presets_qu_id'];
 			}
 
 			// Use the localized product name, if provided
 			$name = $data->product->product_name;
-			if (isset($data->product->$productNameFieldLocalized) && !empty($data->product->$productNameFieldLocalized))
-			{
+			if (isset($data->product->$productNameFieldLocalized) && !empty($data->product->$productNameFieldLocalized)) {
 				$name = $data->product->$productNameFieldLocalized;
 			}
 
@@ -72,7 +65,7 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 			$brand = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $brand);
 
 			return [
-				'name' => $brand . ' - ' . $name,
+				'name' => '[A] ' . implode(' - ', array_filter([$brand, $name])),
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId,
