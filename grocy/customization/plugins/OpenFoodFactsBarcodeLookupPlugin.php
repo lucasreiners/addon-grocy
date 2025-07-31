@@ -14,16 +14,6 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 
 	protected function ExecuteLookup($barcode)
 	{
-		$productNameFieldLocalized = 'product_name_' . substr(GROCY_LOCALE, 0, 2);
-
-		$webClient = new Client(['http_errors' => false]);
-		$response = $webClient->request('GET', 'https://world.openfoodfacts.org/api/v2/product/' . preg_replace('/[^0-9]/', '', $barcode) . '?fields=product_name,image_url,brands,' . $productNameFieldLocalized, ['headers' => ['User-Agent' => 'GrocyOpenFoodFactsBarcodeLookupPlugin/1.0 (https://grocy.info)']]);
-		$statusCode = $response->getStatusCode();
-
-		// Guzzle throws exceptions for connection errors, so nothing to do on that here
-
-		$data = json_decode($response->getBody());
-
 		// Take the preset user setting or otherwise simply the first existing location
 		$locationId = $this->Locations[0]->id;
 		if ($this->UserSettings['product_presets_location_id'] != -1) {
@@ -36,42 +26,113 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 			$quId = $this->UserSettings['product_presets_qu_id'];
 		}
 
-		if ($statusCode == 404 || $data->status != 1) {
+		$result = $this->lookupCustomProductProxy($barcode);
+		if ($result !== null) {
 			return [
-				'name' => 'LookupFailed_' . $barcode . '_' . RandomString(10),
+				'name' => $result['name'],
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId,
 				'__qu_factor_purchase_to_stock' => 1,
-				'__barcode' => $barcode
+				'__barcode' => $barcode,
+				'__image_url' => $result['image_url']
 			];
+		}
+
+		$result = $this->lookupOpenFoodFacts($barcode);
+		if ($result !== null) {
+			return [
+				'name' => $result['name'],
+				'location_id' => $locationId,
+				'qu_id_purchase' => $quId,
+				'qu_id_stock' => $quId,
+				'__qu_factor_purchase_to_stock' => 1,
+				'__barcode' => $barcode,
+				'__image_url' => $result['image_url']
+			];
+		}
+
+		return [
+			'name' => '[AutoImportFailed]_' . $barcode,
+			'location_id' => $locationId,
+			'qu_id_purchase' => $quId,
+			'qu_id_stock' => $quId,
+			'__qu_factor_purchase_to_stock' => 1,
+			'__barcode' => $barcode,
+			'__image_url' => $result['image_url']
+		];
+	}
+
+	private function lookupOpenFoodFacts($barcode)
+	{
+		$productNameFieldLocalized = 'product_name_' . substr(GROCY_LOCALE, 0, 2);
+
+		$webClient = new Client(['http_errors' => false]);
+		$response = $webClient->request(
+			'GET',
+			'https://world.openfoodfacts.org/api/v2/product/' . preg_replace('/[^0-9]/', '', $barcode) . '?fields=product_name,image_url,brands,' . $productNameFieldLocalized,
+			['headers' => ['User-Agent' => 'GrocyOpenFoodFactsBarcodeLookupPlugin/1.0 (https://grocy.info)']]
+		);
+		$statusCode = $response->getStatusCode();
+
+		$data = json_decode($response->getBody());
+
+		if ($statusCode == 404 || $data->status != 1) {
+			return null;
 		} else {
 			$imageUrl = '';
 			if (isset($data->product->image_url) && !empty($data->product->image_url)) {
 				$imageUrl = $data->product->image_url;
 			}
 
-			// Use the localized product name, if provided
 			$name = $data->product->product_name;
-			if (isset($data->product->$productNameFieldLocalized) && !empty($data->product->$productNameFieldLocalized)) {
-				$name = $data->product->$productNameFieldLocalized;
+			if (isset($data->name) && !empty($data->name)) {
+				$name = $data->name;
 			}
 
 			$brands = explode(', ', $data->product->brands);
 			$brand = $brands[0] ?? '';
 
-			// Remove non-ASCII characters in product name (whyever a product name should have them at all)
 			$name = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $name);
 			$brand = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $brand);
 
 			return [
-				'name' => '[A] ' . implode(' - ', array_filter([$brand, $name])),
-				'location_id' => $locationId,
-				'qu_id_purchase' => $quId,
-				'qu_id_stock' => $quId,
-				'__qu_factor_purchase_to_stock' => 1,
-				'__barcode' => $barcode,
-				'__image_url' => $imageUrl
+				'name' => '[AutoImportGrocy] ' . implode(' - ', array_filter([$brand, $name])),
+				'image_url' => $imageUrl
+			];
+		}
+	}
+
+	private function lookupCustomProductProxy($barcode)
+	{
+		$webClient = new Client(['http_errors' => false]);
+		$response = $webClient->request(
+			'GET',
+			'http://172.16.51.20:14000/api/lookup/' . preg_replace('/[^0-9]/', '', $barcode),
+			['headers' => ['User-Agent' => 'GrocyOpenFoodFactsBarcodeLookupPlugin/1.0 (https://grocy.info)']]
+		);
+		$statusCode = $response->getStatusCode();
+
+		$data = json_decode($response->getBody());
+
+		if ($statusCode == 404 || $data->status != 1) {
+			return null;
+		} else {
+			$imageUrl = '';
+			if (isset($data->productUrl) && !empty($data->productUrl)) {
+				$imageUrl = $data->productUrl;
+			}
+
+			$name = $data->product->product_name;
+			if (isset($data->name) && !empty($data->name)) {
+				$name = $data->name;
+			}
+
+			$name = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $name);
+
+			return [
+				'name' => '[AutoImportProxy] ' . $name,
+				'image_url' => $imageUrl
 			];
 		}
 	}
