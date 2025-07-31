@@ -128,7 +128,7 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 				$name = $data->name;
 			}
 
-			$name = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $name);
+			// $name = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß ]/', '', $name);
 
 			return [
 				'name' => '[AutoImportProxy] ' . $name,
