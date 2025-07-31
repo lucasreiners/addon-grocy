@@ -119,8 +119,8 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 			return null;
 		} else {
 			$imageUrl = '';
-			if (isset($data->productUrl) && !empty($data->productUrl)) {
-				$imageUrl = $data->productUrl;
+			if (isset($data->imageUrl) && !empty($data->imageUrl)) {
+				$imageUrl = $data->imageUrl;
 			}
 
 			$name = $data->product->product_name;
