@@ -115,7 +115,7 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 
 		$data = json_decode($response->getBody());
 
-		if ($statusCode == 404 || $data->status != 1) {
+		if ($statusCode == 404 || !isset($data->name)) {
 			return null;
 		} else {
 			$imageUrl = '';
