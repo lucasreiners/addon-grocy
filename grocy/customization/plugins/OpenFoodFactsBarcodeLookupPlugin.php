@@ -26,6 +26,9 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 			$quId = $this->UserSettings['product_presets_qu_id'];
 		}
 
+		$quantityUnitIdPiece = FindObjectInArrayByPropertyValue($this->QuantityUnits, 'name', 'Stück');
+		$quantityUnitIdBottle = FindObjectInArrayByPropertyValue($this->QuantityUnits, 'name', 'Flasche');
+
 		$result = $this->lookupCustomProductProxy($barcode);
 		if ($result !== null) {
 			return [
@@ -33,6 +36,7 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId,
+				'default_best_before_days' => -1,
 				'__qu_factor_purchase_to_stock' => 1,
 				'__barcode' => $barcode,
 				'__image_url' => $result['image_url']
@@ -46,6 +50,7 @@ class OpenFoodFactsBarcodeLookupPlugin extends BaseBarcodeLookupPlugin
 				'location_id' => $locationId,
 				'qu_id_purchase' => $quId,
 				'qu_id_stock' => $quId,
+				'default_best_before_days' => -1,
 				'__qu_factor_purchase_to_stock' => 1,
 				'__barcode' => $barcode,
 				'__image_url' => $result['image_url']
